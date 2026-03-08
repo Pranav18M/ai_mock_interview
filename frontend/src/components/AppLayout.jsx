@@ -4,189 +4,133 @@ import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const NAV = [
-  {
-    id: 'explore', label: 'Explore', path: '/explore',
-    icon: <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg>,
-  },
-  {
-    id: 'interview', label: 'Interview', path: '/setup',
-    icon: <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg>,
-  },
-  {
-    id: 'scores', label: 'Scores', path: '/scores',
-    icon: <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
-  },
+  { id: 'explore', label: 'Explore', path: '/explore', icon: <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg> },
+  { id: 'interview', label: 'Interview', path: '/setup', icon: <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/></svg> },
+  { id: 'scores', label: 'Scores', path: '/scores', icon: <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> },
 ]
 
 export default function AppLayout({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      if (!mobile) setMobileOpen(false)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close mobile menu on route change
-  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+  useEffect(() => setMobileMenuOpen(false), [location.pathname])
 
   const handleLogout = () => { logout(); navigate('/'); toast.success('Signed out') }
   const active = NAV.find(n => location.pathname.startsWith(n.path))?.id || 'explore'
 
-  const SidebarContent = () => (
-    <>
-      {/* Logo */}
-      <div style={{ padding: (collapsed && !isMobile) ? '20px 0' : '20px 20px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start' }}>
-        <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </div>
-        {(!collapsed || isMobile) && <span style={{ fontWeight: '700', fontSize: '15px', letterSpacing: '-0.3px', color: '#f0f2f8' }}>InterviewAI</span>}
-        {isMobile && (
-          <button onClick={() => setMobileOpen(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px' }}>
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        )}
-      </div>
-
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '16px 10px' }}>
-        {NAV.map(item => {
-          const isActive = active === item.id
-          return (
-            <Link key={item.id} to={item.path} style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: (collapsed && !isMobile) ? '11px 0' : '11px 12px',
-              borderRadius: '10px', marginBottom: '4px',
-              justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
-              background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
-              color: isActive ? '#818cf8' : 'rgba(255,255,255,0.45)',
-              textDecoration: 'none', fontWeight: isActive ? '600' : '400',
-              fontSize: '14px', transition: 'all 0.15s ease',
-              borderLeft: isActive ? '2px solid #6366f1' : '2px solid transparent',
-            }}
-              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)' } }}
-              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' } }}
-            >
-              {item.icon}
-              {(!collapsed || isMobile) && <span>{item.label}</span>}
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* User + Logout */}
-      <div style={{ padding: (collapsed && !isMobile) ? '16px 0' : '16px 12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        {(!collapsed || isMobile) && (
-          <div style={{ marginBottom: '10px', padding: '10px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)' }}>
-            <p style={{ fontSize: '13px', fontWeight: '600', color: '#e8eaf0', margin: 0 }}>{user?.name}</p>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</p>
-          </div>
-        )}
-        <button onClick={handleLogout} style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          width: '100%', padding: (collapsed && !isMobile) ? '10px 0' : '9px 10px',
-          justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          color: 'rgba(255,255,255,0.35)', fontSize: '13px', borderRadius: '8px', transition: 'all 0.15s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#f87171' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}
-        >
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-          {(!collapsed || isMobile) && <span>Sign out</span>}
-        </button>
-      </div>
-    </>
-  )
-
-  if (isMobile) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#080c14', fontFamily: "'DM Sans','Sora',sans-serif", color: '#e8eaf0' }}>
-        {/* Mobile Top Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0d1220', position: 'sticky', top: 0, zIndex: 30 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            </div>
-            <span style={{ fontWeight: '700', fontSize: '14px', color: '#f0f2f8' }}>InterviewAI</span>
-          </div>
-          <button onClick={() => setMobileOpen(true)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          </button>
-        </div>
-
-        {/* Mobile Drawer Overlay */}
-        {mobileOpen && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-            <div onClick={() => setMobileOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '260px', background: 'linear-gradient(180deg,#0d1220,#0a0f1a)', borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.25s ease' }}>
-              <SidebarContent />
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Bottom Nav */}
-        <main style={{ flex: 1, overflow: 'auto' }}>{children}</main>
-        <div style={{ display: 'flex', borderTop: '1px solid rgba(255,255,255,0.06)', background: '#0d1220', position: 'sticky', bottom: 0, zIndex: 20 }}>
-          {NAV.map(item => {
-            const isActive = active === item.id
-            return (
-              <Link key={item.id} to={item.path} style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                padding: '12px 8px', textDecoration: 'none',
-                color: isActive ? '#818cf8' : 'rgba(255,255,255,0.35)',
-                borderTop: isActive ? '2px solid #6366f1' : '2px solid transparent',
-                transition: 'all 0.15s',
-              }}>
-                {item.icon}
-                <span style={{ fontSize: '10px', fontWeight: isActive ? '600' : '400' }}>{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-        <style>{`@keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}`}</style>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#080c14', fontFamily: "'DM Sans','Sora',sans-serif", color: '#e8eaf0' }}>
-      {/* Desktop Sidebar */}
-      <aside style={{
-        width: collapsed ? '64px' : '220px', minHeight: '100vh',
-        background: 'linear-gradient(180deg,#0d1220,#0a0f1a)',
-        borderRight: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex', flexDirection: 'column',
-        transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)',
-        flexShrink: 0, position: 'relative', zIndex: 10,
+    <div style={{ minHeight: '100vh', background: '#f0eff5', fontFamily: "'DM Sans',sans-serif", color: '#1a1a2e' }}>
+
+      {/* ── Navbar with shadow ── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        background: scrolled ? 'rgba(240,239,245,0.94)' : '#f0eff5',
+        backdropFilter: scrolled ? 'blur(18px)' : 'none',
+        borderBottom: '1px solid rgba(79,70,229,0.08)',
+        boxShadow: scrolled ? '0 2px 20px rgba(80,60,180,0.10), 0 1px 4px rgba(0,0,0,0.05)' : '0 1px 0 rgba(79,70,229,0.07)',
+        transition: 'all 0.25s ease',
       }}>
-        <SidebarContent />
-        {/* Collapse toggle */}
-        <button onClick={() => setCollapsed(!collapsed)} style={{
-          position: 'absolute', top: '50%', right: '-12px',
-          width: '24px', height: '24px', borderRadius: '50%',
-          background: '#1a2035', border: '1px solid rgba(255,255,255,0.1)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.4)', zIndex: 20, transition: 'all 0.2s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#252d45'; e.currentTarget.style.color = '#fff' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#1a2035'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            {collapsed ? <path d="M9 18l6-6-6-6"/> : <path d="M15 18l-6-6 6-6"/>}
-          </svg>
-        </button>
-      </aside>
-      <main style={{ flex: 1, overflow: 'auto', minHeight: '100vh' }}>{children}</main>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'center', height: '60px', gap: '28px' }}>
+
+          {/* Logo */}
+          <Link to="/explore" style={{ display: 'flex', alignItems: 'center', gap: '9px', textDecoration: 'none', flexShrink: 0 }}>
+            <div style={{ width: '33px', height: '33px', borderRadius: '10px', background: 'linear-gradient(135deg,#1a1a2e,#2d2d5e)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 10px rgba(26,26,46,0.3)' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <span style={{ fontWeight: '800', fontSize: '15px', color: '#1a1a2e', letterSpacing: '-0.4px' }}>InterviewAI</span>
+          </Link>
+
+          {/* Nav tabs — with inset shadow */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(255,255,255,0.6)', borderRadius: '13px', padding: '4px', flex: 'none', border: '1px solid rgba(79,70,229,0.1)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 4px rgba(80,60,180,0.07)' }} className="desktop-nav">
+            {NAV.map(item => {
+              const isActive = active === item.id
+              return (
+                <Link key={item.id} to={item.path} style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  padding: '7px 17px', borderRadius: '10px',
+                  background: isActive ? '#fff' : 'transparent',
+                  color: isActive ? '#1a1a2e' : 'rgba(26,26,46,0.42)',
+                  textDecoration: 'none', fontWeight: isActive ? '700' : '500',
+                  fontSize: '13.5px', transition: 'all 0.18s ease',
+                  boxShadow: isActive ? '0 2px 8px rgba(80,60,180,0.14), 0 1px 3px rgba(0,0,0,0.07)' : 'none',
+                }}
+                  onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = '#1a1a2e'; e.currentTarget.style.background = 'rgba(255,255,255,0.5)' }}}
+                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = 'rgba(26,26,46,0.42)'; e.currentTarget.style.background = 'transparent' }}}
+                >
+                  {item.icon}{item.label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div style={{ flex: 1 }} />
+
+          {/* User area */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="desktop-user">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid rgba(79,70,229,0.1)', borderRadius: '40px', padding: '4px 14px 4px 4px', boxShadow: '0 2px 8px rgba(80,60,180,0.09)' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(79,70,229,0.35)' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', color: '#fff' }}>{user?.name?.[0]?.toUpperCase()}</span>
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a1a2e' }}>{user?.name?.split(' ')[0]}</span>
+            </div>
+            <button onClick={handleLogout}
+              style={{ padding: '7px 15px', borderRadius: '9px', border: '1px solid rgba(0,0,0,0.09)', background: '#fff', color: 'rgba(26,26,46,0.55)', fontSize: '12.5px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.15s', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = 'rgba(220,38,38,0.2)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.12)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = 'rgba(26,26,46,0.55)'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.09)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)' }}
+            >Sign out</button>
+          </div>
+
+          {/* Mobile hamburger */}
+          <button onClick={() => setMobileMenuOpen(o => !o)} className="mobile-menu-btn"
+            style={{ display: 'none', background: '#fff', border: '1px solid rgba(79,70,229,0.1)', borderRadius: '9px', padding: '8px', cursor: 'pointer', color: '#1a1a2e', boxShadow: '0 1px 4px rgba(80,60,180,0.1)' }}>
+            {mobileMenuOpen
+              ? <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              : <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>}
+          </button>
+        </div>
+
+        {/* Mobile dropdown */}
+        {mobileMenuOpen && (
+          <div style={{ borderTop: '1px solid rgba(79,70,229,0.08)', background: '#fff', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 8px 24px rgba(80,60,180,0.12)' }}>
+            {NAV.map(item => {
+              const isActive = active === item.id
+              return (
+                <Link key={item.id} to={item.path} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', borderRadius: '10px', background: isActive ? '#f0f0ff' : 'transparent', color: isActive ? '#4f46e5' : '#1a1a2e', textDecoration: 'none', fontWeight: isActive ? '700' : '400', fontSize: '14px', boxShadow: isActive ? '0 2px 8px rgba(79,70,229,0.1)' : 'none' }}>
+                  {item.icon}{item.label}
+                </Link>
+              )
+            })}
+            <div style={{ borderTop: '1px solid rgba(79,70,229,0.08)', marginTop: '8px', paddingTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(79,70,229,0.3)' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#fff' }}>{user?.name?.[0]?.toUpperCase()}</span>
+                </div>
+                <span style={{ fontSize: '13px', color: '#1a1a2e', fontWeight: '600' }}>{user?.name}</span>
+              </div>
+              <button onClick={handleLogout} style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid rgba(220,38,38,0.2)', background: '#fef2f2', color: '#dc2626', fontSize: '12px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 1px 4px rgba(220,38,38,0.1)' }}>Sign out</button>
+            </div>
+          </div>
+        )}
+      </header>
+
+      <main>{children}</main>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .desktop-user { display: none !important; }
+          .mobile-menu-btn { display: flex !important; }
+        }
+      `}</style>
     </div>
   )
 }

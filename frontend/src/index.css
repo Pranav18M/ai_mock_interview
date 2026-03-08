@@ -1,78 +1,102 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg: #f0eff5;
+  --surface: #ffffff;
+  --surface2: #f7f6fb;
+  --border: rgba(0,0,0,0.07);
+  --text: #1a1a2e;
+  --text-muted: rgba(26,26,46,0.45);
+  --accent: #4f46e5;
+  --accent-light: #f0f0ff;
+  --shadow-xs: 0 1px 3px rgba(80,60,180,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 2px 8px rgba(80,60,180,0.09), 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 20px rgba(80,60,180,0.11), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 32px rgba(80,60,180,0.13), 0 4px 12px rgba(0,0,0,0.07);
+  --shadow-xl: 0 16px 48px rgba(80,60,180,0.15), 0 6px 18px rgba(0,0,0,0.08);
+  --radius: 14px;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(79,70,229,0.15); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(79,70,229,0.28); }
+
+::selection { background: rgba(79,70,229,0.15); color: #1a1a2e; }
+:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; border-radius: 6px; }
+
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+a { color: inherit; }
+
+/* ── Card class for consistent elevated surface ── */
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1.5px solid rgba(255,255,255,0.9);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.card-flat {
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1.5px solid rgba(0,0,0,0.07);
+  box-shadow: var(--shadow-sm);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+/* ── Section divider ── */
+.section-gap {
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(79,70,229,0.08);
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-html, body, #root {
+
+/* Animations */
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes wave { from{height:4px} to{height:18px} }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes borderPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+@keyframes slideIn { from{transform:translateX(-100%)} to{transform:translateX(0)} }
+@keyframes ringPulse { 0%{transform:scale(0.95);opacity:0.7} 100%{transform:scale(1.15);opacity:0} }
+
+main > * { animation: fadeUp 0.3s ease both; }
+
+input[type="text"], input[type="email"], input[type="password"] {
+  background: #fff;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #1a1a2e;
+  transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
+  box-shadow: var(--shadow-xs);
+}
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+@media (max-width: 900px) { .hide-mobile { display: none !important; } }
+@media (min-width: 901px) { .show-mobile-only { display: none !important; } }
