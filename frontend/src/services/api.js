@@ -36,8 +36,7 @@ export const login = (data) => api.post('/auth/login', data)
 // Resume
 export const uploadResume = (formData) =>
   api.post('/resume/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-export const getResume = () => api.get('/resume/')
-
+export const getResume = () => api.get('/resume')
 // Interview
 export const generateQuestions = (data) => api.post('/interview/generate-questions', data)
 export const submitAnswer = (data) => api.post('/interview/submit-answer', data)

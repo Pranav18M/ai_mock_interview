@@ -10,9 +10,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 @lru_cache()
@@ -38,7 +40,6 @@ async def connect_db():
 async def close_db():
     if db_instance.client:
         db_instance.client.close()
-        print("MongoDB connection closed")
 
 
 def get_db():
