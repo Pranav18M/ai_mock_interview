@@ -1,31 +1,53 @@
 import json
 import re
+import asyncio
 import httpx
 from typing import List, Dict, Any
 from config.database import get_settings
 
+# Priority model list — tries each in order if quota exceeded
+GEMINI_MODELS = [
+    "gemini-1.5-flash",      # 1500 req/day free — primary
+    "gemini-1.5-flash-8b",   # 1500 req/day free — fallback 1
+    "gemini-1.0-pro",        # 60 req/min free   — fallback 2
+]
 
 # ---------------- GEMINI CALL ---------------- #
 
-async def call_gemini(prompt: str, temperature: float = 0.7) -> str:
+async def call_gemini(prompt: str, temperature: float = 0.7, model: str = None) -> str:
     settings = get_settings()
     key = settings.GEMINI_API_KEY.strip()
     if not key:
         raise Exception("GEMINI_API_KEY missing")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": temperature, "maxOutputTokens": 2000}
-    }
-    async with httpx.AsyncClient(timeout=30) as client:
-        res = await client.post(url, json=payload)
-    if res.status_code != 200:
-        raise Exception(f"Gemini HTTP error {res.status_code}: {res.text}")
-    data = res.json()
-    if "candidates" not in data:
-        error_msg = data.get("error", {}).get("message", str(data))
-        raise Exception(f"Gemini API error: {error_msg}")
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+
+    models_to_try = [model] if model else GEMINI_MODELS
+
+    for m in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={key}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": temperature, "maxOutputTokens": 2000}
+        }
+        async with httpx.AsyncClient(timeout=55) as client:
+            res = await client.post(url, json=payload)
+
+        if res.status_code == 429:
+            print(f"[Gemini] {m} quota exceeded, trying next model...")
+            continue   # try next model
+
+        if res.status_code != 200:
+            raise Exception(f"Gemini HTTP error {res.status_code}: {res.text[:300]}")
+
+        data = res.json()
+        if "candidates" not in data:
+            error_msg = data.get("error", {}).get("message", str(data))
+            raise Exception(f"Gemini API error: {error_msg}")
+
+        print(f"[Gemini] success with model: {m}")
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+
+    # All models exhausted — raise friendly error
+    raise Exception("QUOTA_EXCEEDED")
 
 
 # ---------------- AI ROUTER ---------------- #
@@ -33,21 +55,20 @@ async def call_gemini(prompt: str, temperature: float = 0.7) -> str:
 async def call_ai(prompt: str, temperature: float = 0.7) -> str:
     settings = get_settings()
     gemini_key = settings.GEMINI_API_KEY.strip()
-    openai_key = settings.OPENAI_API_KEY.strip()
     if gemini_key.startswith("AIza"):
         return await call_gemini(prompt, temperature)
-    elif openai_key.startswith("sk-"):
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=openai_key)
-        response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=2000,
-        )
-        return response.choices[0].message.content.strip()
-    else:
-        raise Exception("No valid AI API key found.")
+    raise Exception("No valid AI API key found.")
+
+
+async def call_ai_safe(prompt: str, temperature: float = 0.7, fallback: str = "{}") -> str:
+    """Like call_ai but returns fallback string instead of raising on quota error."""
+    try:
+        return await call_ai(prompt, temperature)
+    except Exception as e:
+        if "QUOTA_EXCEEDED" in str(e) or "429" in str(e):
+            print("[AI] All Gemini quotas exceeded — using fallback response")
+            return fallback
+        raise
 
 
 # ---------------- GREETING ---------------- #
@@ -90,6 +111,78 @@ Return ONLY the response text. Nothing else."""
 
 # ---------------- QUESTION GENERATION ---------------- #
 
+FALLBACK_QUESTIONS: Dict[str, List[str]] = {
+    "Frontend Developer": [
+        "Explain the difference between `==` and `===` in JavaScript and when to use each.",
+        "What is the Virtual DOM in React and how does it improve performance?",
+        "How do you implement responsive design? Explain CSS Flexbox vs Grid.",
+        "Describe a React project you built — what state management approach did you use and why?",
+        "What are React Hooks? Explain `useState` and `useEffect` with examples.",
+    ],
+    "Backend Developer": [
+        "What is the difference between REST and GraphQL APIs? When would you choose each?",
+        "Explain database indexing — how does it work and when should you use it?",
+        "How do you handle authentication and authorization in a backend API?",
+        "Describe a backend project you built — what was the biggest technical challenge?",
+        "What is the difference between SQL and NoSQL databases? Give examples of when to use each.",
+    ],
+    "Full Stack Developer": [
+        "Walk me through building a full-stack feature end-to-end from database to UI.",
+        "How do you handle state management across a full-stack React + Node.js app?",
+        "Explain the difference between server-side rendering (SSR) and client-side rendering (CSR).",
+        "Describe a full-stack project you built — what tech stack did you choose and why?",
+        "How do you secure a REST API? Explain the JWT authentication flow.",
+    ],
+    "Python Developer": [
+        "What are Python decorators? Write an example of a custom decorator.",
+        "Explain the difference between `list`, `tuple`, and `set` in Python.",
+        "How does async/await work in Python? When would you use `asyncio`?",
+        "Describe a Python project you built — what libraries or frameworks did you use?",
+        "What is the difference between Django and FastAPI? When would you choose each?",
+    ],
+    "Java Developer": [
+        "Explain the difference between `abstract class` and `interface` in Java.",
+        "What is Spring Boot auto-configuration and how does it work?",
+        "How does garbage collection work in the JVM?",
+        "Describe a Java Spring project you built — what modules did you use?",
+        "What is the difference between `HashMap` and `ConcurrentHashMap`?",
+    ],
+    "Data Scientist": [
+        "Explain the bias-variance tradeoff in machine learning.",
+        "What is the difference between supervised and unsupervised learning?",
+        "How do you handle missing data in a dataset?",
+        "Describe an ML project you built — what model did you use and what accuracy did you achieve?",
+        "What is overfitting? How do you detect and prevent it?",
+    ],
+    "DevOps Engineer": [
+        "What is CI/CD? Describe a pipeline you have set up.",
+        "Explain the difference between Docker containers and virtual machines.",
+        "How does Kubernetes work? What problems does it solve?",
+        "Describe an infrastructure challenge you solved — what tools did you use?",
+        "What is Infrastructure as Code (IaC)? Have you used Terraform or Ansible?",
+    ],
+    "Mobile Developer": [
+        "Explain the difference between React Native and Flutter.",
+        "How do you handle offline functionality in a mobile app?",
+        "What is the mobile app lifecycle? Explain foreground vs background states.",
+        "Describe a mobile app you built — what was the biggest technical challenge?",
+        "How do you optimize mobile app performance and reduce battery drain?",
+    ],
+}
+
+def get_fallback_questions(role: str) -> List[str]:
+    for key, questions in FALLBACK_QUESTIONS.items():
+        if key.lower() in role.lower() or role.lower() in key.lower():
+            return questions
+    return [
+        f"Tell me about your experience in {role} development.",
+        f"What are the key principles you follow in {role}?",
+        "Describe the most challenging project you've worked on.",
+        "How do you approach debugging a complex problem?",
+        "How do you keep up with new technologies in your field?",
+    ]
+
+
 async def generate_questions(
     role: str,
     difficulty: str,
@@ -97,40 +190,36 @@ async def generate_questions(
     projects: List[str],
     experience: List[str],
 ) -> List[str]:
-    skills_str = ", ".join(skills[:10]) if skills else "general programming"
-    projects_str = "; ".join(projects[:3]) if projects else "no projects"
+    skills_str   = ", ".join(skills[:10])  if skills   else "general programming"
+    projects_str = "; ".join(projects[:3]) if projects else "no projects listed"
     prompt = f"""
-Generate exactly 5 interview questions.
+Generate exactly 5 interview questions for a {difficulty} level {role} candidate.
 
-Role: {role}
-Difficulty: {difficulty}
-Skills: {skills_str}
+Candidate skills: {skills_str}
 Projects: {projects_str}
 
 Rules:
-- At least one question about projects
-- Mix conceptual + practical + behavioral
-- Return ONLY JSON array
+- At least one question about their projects/experience
+- Mix conceptual + practical + behavioral questions
+- Match {difficulty} level difficulty
+- Return ONLY a JSON array of 5 strings, no markdown
 
 ["Q1","Q2","Q3","Q4","Q5"]
 """
-    content = await call_ai(prompt)
-    content = re.sub(r'```json|```', '', content).strip()
-    match = re.search(r'\[.*\]', content, re.DOTALL)
-    if match:
-        try:
+    try:
+        content = await call_ai(prompt)
+        content = re.sub(r'```json|```', '', content).strip()
+        match = re.search(r'\[.*\]', content, re.DOTALL)
+        if match:
             questions = json.loads(match.group())
-            if isinstance(questions, list):
+            if isinstance(questions, list) and len(questions) >= 3:
                 return questions[:5]
-        except:
-            pass
-    return [
-        f"Explain your experience in {role}.",
-        f"What are the key principles in {role} development?",
-        "Describe a challenging project you worked on.",
-        "How do you debug complex problems?",
-        "How do you stay updated with new technologies?"
-    ]
+    except Exception as e:
+        if "QUOTA_EXCEEDED" in str(e) or "429" in str(e):
+            print(f"[generate_questions] Quota exceeded — using built-in fallback questions for {role}")
+        else:
+            print(f"[generate_questions] AI error: {e} — using fallback")
+    return get_fallback_questions(role)
 
 
 # ---------------- ANSWER EVALUATION ---------------- #
