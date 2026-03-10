@@ -10,12 +10,13 @@ import Scores from './pages/Scores'
 import ResumeUpload from './pages/ResumeUpload'
 import LiveInterview from './pages/LiveInterview'
 import InterviewReport from './pages/InterviewReport'
+import ATSScore from './pages/AtsScore'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#080c14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '32px', height: '32px', border: '2px solid rgba(99,102,241,0.3)', borderTop: '2px solid #6366f1', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+    <div style={{ minHeight: '100vh', background: '#f0eff5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '32px', height: '32px', border: '2px solid rgba(79,70,229,0.2)', borderTop: '2px solid #4f46e5', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -33,7 +34,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Toaster position="top-right" toastOptions={{
-          style: { background: '#0d1220', color: '#e8eaf0', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', fontSize: '13px' },
+          style: { background: '#fff', color: '#1a1a2e', border: '1px solid rgba(79,70,229,0.12)', borderRadius: '10px', fontSize: '13px', boxShadow: '0 4px 16px rgba(80,60,180,0.12)' },
         }} />
         <Routes>
           <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
           <Route path="/setup" element={<ProtectedRoute><InterviewHub /></ProtectedRoute>} />
           <Route path="/scores" element={<ProtectedRoute><Scores /></ProtectedRoute>} />
+          <Route path="/ats" element={<ProtectedRoute><ATSScore /></ProtectedRoute>} />
           <Route path="/interview-resume" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
           <Route path="/resume" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
           <Route path="/interview/:id" element={<ProtectedRoute><LiveInterview /></ProtectedRoute>} />
